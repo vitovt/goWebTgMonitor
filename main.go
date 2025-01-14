@@ -59,14 +59,23 @@ func main() {
 	// Start receiving updates
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
+	u.AllowedUpdates = []string{"message", "callback_query"} // so we can handle button clicks
 	updates := bot.GetUpdatesChan(u)
 
-	// Goroutine to handle Telegram updates (commands, messages, etc.)
+	// Goroutine to handle Telegram updates (commands, messages, callback queries)
 	go func() {
 		for update := range updates {
-			// If it has a message
+			// Check if it is a message with a command
 			if update.Message != nil {
-				handleMessage(update.Message)
+				// If the user sent a command (/command) ...
+				if update.Message.IsCommand() {
+					handleCommand(update.Message)
+				}
+				// If it wasn't a command, you can handle plain text here if needed
+
+				// Handle callback queries (button clicks)
+			} else if update.CallbackQuery != nil {
+				handleCallbackQuery(update.CallbackQuery)
 			}
 		}
 	}()
@@ -96,36 +105,86 @@ func loadConfig(filePath string) error {
 	return nil
 }
 
-// handleMessage processes incoming Telegram messages/commands
-func handleMessage(msg *tgbotapi.Message) {
+// handleCommand processes /commands
+func handleCommand(msg *tgbotapi.Message) {
 	chatID := msg.Chat.ID
 	userID := msg.From.ID
+	cmd := msg.Command() // e.g., "start", "help", "оживити"
 
-	// We only care about messages from the subset that can send "оживити"
-	if msg.Text == "оживити" && privilegedUsersSublist[userID] {
-		log.Printf("Received 'оживити' command from user %d", userID)
+	switch cmd {
+	case "start":
+		// Greeting + show help
+		sendMessage(chatID, "Привіт! Я твій бот для управління сервером.\n\n"+getHelpMessage())
+		// Send inline buttons
+		sendCommandButtons(chatID)
 
-		// Execute the script
-		err := runScript(config.ScriptPath)
-		if err != nil {
-			sendMessage(chatID, fmt.Sprintf("Помилка запуску скрипту: %v", err))
-			return
-		}
+	case "help":
+		// Print help
+		sendMessage(chatID, getHelpMessage())
 
-		// Wait the specified time
-		time.Sleep(time.Duration(config.ScriptWaitTimeSeconds) * time.Second)
-
-		// Check service again
-		ok := checkService()
-		if ok {
-			// If OK, send success message to entire list1
-			broadcastMessage("Сервер було оживлено. Все в порядку!")
-			// Reset the error flag
-			lastCheckWasError = false
+	case "оживити":
+		// Same logic as before: only privileged users
+		if privilegedUsersSublist[userID] {
+			handleOzhyvlyty(chatID)
 		} else {
-			// If not OK, continue normal cycle (do nothing special here)
-			sendMessage(chatID, "Сервіс все ще недоступний, продовжую перевірку.")
+			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
 		}
+
+	default:
+		sendMessage(chatID, "Невідома команда. Використовуйте /help для отримання списку команд.")
+	}
+}
+
+// handleCallbackQuery processes button clicks
+func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
+	chatID := query.Message.Chat.ID
+	userID := query.From.ID
+	data := query.Data // e.g., "/help", "/start", "/оживити"
+
+	// We can treat it just like a command
+	switch data {
+	case "/start":
+		sendMessage(chatID, "Привіт! Я твій бот для управління сервером.\n\n"+getHelpMessage())
+		sendCommandButtons(chatID)
+	case "/help":
+		sendMessage(chatID, getHelpMessage())
+	case "/оживити":
+		if privilegedUsersSublist[userID] {
+			handleOzhyvlyty(chatID)
+		} else {
+			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
+		}
+	default:
+		sendMessage(chatID, "Невідома команда.")
+	}
+
+	// Always answer the callback to remove "loading..." state in the client
+        bot.Request(tgbotapi.NewCallback(query.ID, ""))
+}
+
+// handleOzhyvlyty extracted from original "msg.Text == оживити" logic
+func handleOzhyvlyty(chatID int64) {
+	log.Printf("Received '/оживити' command from chat %d", chatID)
+
+	// Execute the script
+	err := runScript(config.ScriptPath)
+	if err != nil {
+		sendMessage(chatID, fmt.Sprintf("Помилка запуску скрипту: %v", err))
+		return
+	}
+
+	// Wait the specified time
+	time.Sleep(time.Duration(config.ScriptWaitTimeSeconds) * time.Second)
+
+	// Check service again
+	ok := checkService()
+	if ok {
+		// If OK, send success message to entire list of MonitorUsers
+		broadcastMessage("Сервер було оживлено. Все в порядку!")
+		lastCheckWasError = false
+	} else {
+		// If not OK, continue normal cycle (do nothing special here)
+		sendMessage(chatID, "Сервіс все ще недоступний, продовжую перевірку.")
 	}
 }
 
@@ -211,4 +270,28 @@ func broadcastMessage(text string) {
 	for _, userID := range config.MonitorUsers {
 		sendMessage(userID, text)
 	}
+}
+
+// Returns a help message for /help
+func getHelpMessage() string {
+	return "Доступні команди:\n" +
+		"/start - Привітання і вивід допомоги\n" +
+		"/help - Вивід цього списку команд\n" +
+		"/оживити - Запускає скрипт для оживлення сервера\n"
+}
+
+// Sends inline buttons with all commands
+func sendCommandButtons(chatID int64) {
+	buttons := []tgbotapi.InlineKeyboardButton{
+		tgbotapi.NewInlineKeyboardButtonData("/start", "/start"),
+		tgbotapi.NewInlineKeyboardButtonData("/help", "/help"),
+		tgbotapi.NewInlineKeyboardButtonData("/оживити", "/оживити"),
+	}
+
+	// Arrange buttons in a row (single row with 3 buttons)
+	keyboard := tgbotapi.NewInlineKeyboardMarkup(buttons)
+
+	msg := tgbotapi.NewMessage(chatID, "Оберіть команду з меню:")
+	msg.ReplyMarkup = keyboard
+	bot.Send(msg)
 }
