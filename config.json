@@ -1,0 +1,12 @@
+{
+  "telegramBotToken": "YOUR_TELEGRAM_BOT_TOKEN",
+  "checkURL": "https://YOUR_DOMAIN_OR_IP:YOUR_PORT/",
+  "allowedUsers": [12345678, 87654321],
+  "approvedSublist": [12345678],
+  "checkIntervalSeconds": 60,
+  "secondCheckDelaySeconds": 30,
+  "scriptWaitTimeSeconds": 40,
+  "requestTimeoutSeconds": 30,
+  "scriptPath": "/root/main_script.sh"
+}
+

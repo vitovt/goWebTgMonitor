@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os/exec"
@@ -12,45 +14,42 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
-// ======= CONFIGURATION =======
-
-// Replace with your actual Bot Token from @BotFather
-const telegramBotToken = "YOUR_TELEGRAM_BOT_TOKEN"
-
-// The HTTPS URL to check (domain/ip + port).
-// Example: "https://123.45.67.89:443" or "https://mydomain:8443"
-const checkURL = "https://YOUR_DOMAIN_OR_IP:YOUR_PORT/"
-
-// Allowed user IDs for receiving downtime notifications.
-var allowedUsers = []int64{
-	12345678, // replace with real Telegram user IDs
-	87654321,
+// Config struct to load settings
+type Config struct {
+	TelegramBotToken        string  `json:"telegramBotToken"`
+	CheckURL                string  `json:"checkURL"`
+	AllowedUsers            []int64 `json:"allowedUsers"`
+	ApprovedSublist         []int64 `json:"approvedSublist"`
+	CheckIntervalSeconds    int     `json:"checkIntervalSeconds"`
+	SecondCheckDelaySeconds int     `json:"secondCheckDelaySeconds"`
+	ScriptWaitTimeSeconds   int     `json:"scriptWaitTimeSeconds"`
+	RequestTimeoutSeconds   int     `json:"requestTimeoutSeconds"`
+	ScriptPath              string  `json:"scriptPath"`
 }
 
-// A subset of allowedUsers that can send "оживити" command.
-var approvedSublist = map[int64]bool{
-	12345678: true, // only some from allowedUsers can actually send "оживити"
-	// add more if needed
-}
-
-// Service check intervals
-const checkInterval = 60 * time.Second // how often to check service (e.g., every 60s)
-const secondCheckDelay = 30 * time.Second
-const scriptWaitTime = 40 * time.Second
-const requestTimeout = 30 * time.Second
-
-// ======= GLOBAL FLAGS =======
 var (
+	config            Config
 	bot               *tgbotapi.BotAPI
 	lastCheckWasError bool // track if the last check indicated an error
+	approvedSublist   map[int64]bool
 )
 
 // ======= MAIN =======
 func main() {
-	var err error
+	// Load configuration
+	err := loadConfig("config.json")
+	if err != nil {
+		log.Fatalf("Failed to load config: %v", err)
+	}
+
+	// Convert ApprovedSublist to a map for efficient lookup
+	approvedSublist = make(map[int64]bool)
+	for _, id := range config.ApprovedSublist {
+		approvedSublist[id] = true
+	}
 
 	// Create a new Telegram Bot instance
-	bot, err = tgbotapi.NewBotAPI(telegramBotToken)
+	bot, err = tgbotapi.NewBotAPI(config.TelegramBotToken)
 	if err != nil {
 		log.Fatalf("Error creating bot: %v", err)
 	}
@@ -73,13 +72,28 @@ func main() {
 	}()
 
 	// Periodically check service availability
-	ticker := time.NewTicker(checkInterval)
+	ticker := time.NewTicker(time.Duration(config.CheckIntervalSeconds) * time.Second)
 	defer ticker.Stop()
 
 	for {
 		<-ticker.C
 		checkAndNotify()
 	}
+}
+
+// loadConfig loads settings from a JSON file
+func loadConfig(filePath string) error {
+	data, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return fmt.Errorf("could not read config file: %w", err)
+	}
+
+	err = json.Unmarshal(data, &config)
+	if err != nil {
+		return fmt.Errorf("could not parse config file: %w", err)
+	}
+
+	return nil
 }
 
 // handleMessage processes incoming Telegram messages/commands
@@ -92,14 +106,14 @@ func handleMessage(msg *tgbotapi.Message) {
 		log.Printf("Received 'оживити' command from user %d", userID)
 
 		// Execute the script
-		err := runScript("/root/main_script.sh")
+		err := runScript(config.ScriptPath)
 		if err != nil {
 			sendMessage(chatID, fmt.Sprintf("Помилка запуску скрипту: %v", err))
 			return
 		}
 
 		// Wait the specified time
-		time.Sleep(scriptWaitTime)
+		time.Sleep(time.Duration(config.ScriptWaitTimeSeconds) * time.Second)
 
 		// Check service again
 		ok := checkService()
@@ -121,7 +135,7 @@ func checkAndNotify() {
 	ok := checkService()
 	if !ok {
 		log.Println("Service check failed. Retrying in 30 seconds...")
-		time.Sleep(secondCheckDelay)
+		time.Sleep(time.Duration(config.SecondCheckDelaySeconds) * time.Second)
 
 		// Second check
 		ok2 := checkService()
@@ -140,10 +154,9 @@ func checkAndNotify() {
 	lastCheckWasError = false
 }
 
-// checkService tries to connect to the specified URL with a 30-second timeout,
-// ignoring TLS certificate errors (e.g. self-signed).
+// checkService tries to connect to the specified URL with a timeout, ignoring TLS errors.
 func checkService() bool {
-	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(config.RequestTimeoutSeconds)*time.Second)
 	defer cancel()
 
 	// Custom HTTP client that skips TLS verification
@@ -156,7 +169,7 @@ func checkService() bool {
 		Transport: tr,
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, checkURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, config.CheckURL, nil)
 	if err != nil {
 		log.Printf("Error creating request: %v", err)
 		return false
@@ -195,7 +208,7 @@ func sendMessage(chatID int64, text string) {
 
 // broadcastMessage sends a message to all allowed users
 func broadcastMessage(text string) {
-	for _, userID := range allowedUsers {
+	for _, userID := range config.AllowedUsers {
 		sendMessage(userID, text)
 	}
 }
