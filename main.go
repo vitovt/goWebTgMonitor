@@ -121,10 +121,13 @@ func handleCommand(msg *tgbotapi.Message) {
 	case "help":
 		// Print help
 		sendMessage(chatID, getHelpMessage())
+		// Send inline buttons
+		sendCommandButtons(chatID)
 
-	case "оживити":
+	case "ozhyvyty":
 		// Same logic as before: only privileged users
 		if privilegedUsersSublist[userID] {
+			sendMessage(chatID, "Намагаюсь оживити сервер, зачекайте хвилинку ...")
 			handleOzhyvlyty(chatID)
 		} else {
 			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
@@ -148,7 +151,8 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 		sendCommandButtons(chatID)
 	case "/help":
 		sendMessage(chatID, getHelpMessage())
-	case "/оживити":
+		sendCommandButtons(chatID)
+	case "/ozhyvyty":
 		if privilegedUsersSublist[userID] {
 			handleOzhyvlyty(chatID)
 		} else {
@@ -277,7 +281,7 @@ func getHelpMessage() string {
 	return "Доступні команди:\n" +
 		"/start - Привітання і вивід допомоги\n" +
 		"/help - Вивід цього списку команд\n" +
-		"/оживити - Запускає скрипт для оживлення сервера\n"
+		"/ozhyvyty - Запускає скрипт для оживлення сервера\n"
 }
 
 // Sends inline buttons with all commands
@@ -285,7 +289,7 @@ func sendCommandButtons(chatID int64) {
 	buttons := []tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardButtonData("/start", "/start"),
 		tgbotapi.NewInlineKeyboardButtonData("/help", "/help"),
-		tgbotapi.NewInlineKeyboardButtonData("/оживити", "/оживити"),
+		tgbotapi.NewInlineKeyboardButtonData("/оживити", "/ozhyvyty"),
 	}
 
 	// Arrange buttons in a row (single row with 3 buttons)
