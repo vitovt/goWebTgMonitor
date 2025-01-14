@@ -133,6 +133,9 @@ func handleCommand(msg *tgbotapi.Message) {
 			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
 		}
 
+	case "mysecretid":
+		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d",chatID))
+
 	default:
 		sendMessage(chatID, "Невідома команда. Використовуйте /help для отримання списку команд.")
 	}
