@@ -18,8 +18,8 @@ import (
 type Config struct {
 	TelegramBotToken        string  `json:"telegramBotToken"`
 	CheckURL                string  `json:"checkURL"`
-	AllowedUsers            []int64 `json:"allowedUsers"`
-	ApprovedSublist         []int64 `json:"approvedSublist"`
+	MonitorUsers            []int64 `json:"monitorUsers"`
+	PrivilegedUsersSublist         []int64 `json:"privilegedUsersSublist"`
 	CheckIntervalSeconds    int     `json:"checkIntervalSeconds"`
 	SecondCheckDelaySeconds int     `json:"secondCheckDelaySeconds"`
 	ScriptWaitTimeSeconds   int     `json:"scriptWaitTimeSeconds"`
@@ -31,7 +31,7 @@ var (
 	config            Config
 	bot               *tgbotapi.BotAPI
 	lastCheckWasError bool // track if the last check indicated an error
-	approvedSublist   map[int64]bool
+	privilegedUsersSublist   map[int64]bool
 )
 
 // ======= MAIN =======
@@ -42,10 +42,10 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// Convert ApprovedSublist to a map for efficient lookup
-	approvedSublist = make(map[int64]bool)
-	for _, id := range config.ApprovedSublist {
-		approvedSublist[id] = true
+	// Convert PrivilegedUsersSublist to a map for efficient lookup
+	privilegedUsersSublist = make(map[int64]bool)
+	for _, id := range config.PrivilegedUsersSublist {
+		privilegedUsersSublist[id] = true
 	}
 
 	// Create a new Telegram Bot instance
@@ -102,7 +102,7 @@ func handleMessage(msg *tgbotapi.Message) {
 	userID := msg.From.ID
 
 	// We only care about messages from the subset that can send "оживити"
-	if msg.Text == "оживити" && approvedSublist[userID] {
+	if msg.Text == "оживити" && privilegedUsersSublist[userID] {
 		log.Printf("Received 'оживити' command from user %d", userID)
 
 		// Execute the script
@@ -208,7 +208,7 @@ func sendMessage(chatID int64, text string) {
 
 // broadcastMessage sends a message to all allowed users
 func broadcastMessage(text string) {
-	for _, userID := range config.AllowedUsers {
+	for _, userID := range config.MonitorUsers {
 		sendMessage(userID, text)
 	}
 }
