@@ -19,7 +19,7 @@ type Config struct {
 	TelegramBotToken        string  `json:"telegramBotToken"`
 	CheckURL                string  `json:"checkURL"`
 	MonitorUsers            []int64 `json:"monitorUsers"`
-	PrivilegedUsersSublist         []int64 `json:"privilegedUsersSublist"`
+	PrivilegedUsersSublist  []int64 `json:"privilegedUsersSublist"`
 	CheckIntervalSeconds    int     `json:"checkIntervalSeconds"`
 	SecondCheckDelaySeconds int     `json:"secondCheckDelaySeconds"`
 	ScriptWaitTimeSeconds   int     `json:"scriptWaitTimeSeconds"`
@@ -28,10 +28,10 @@ type Config struct {
 }
 
 var (
-	config            Config
-	bot               *tgbotapi.BotAPI
-	lastCheckWasError bool // track if the last check indicated an error
-	privilegedUsersSublist   map[int64]bool
+	config                 Config
+	bot                    *tgbotapi.BotAPI
+	lastCheckWasError      bool // track if the last check indicated an error
+	privilegedUsersSublist map[int64]bool
 )
 
 // ======= MAIN =======
@@ -134,7 +134,7 @@ func handleCommand(msg *tgbotapi.Message) {
 		}
 
 	case "mysecretid":
-		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d",chatID))
+		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d", chatID))
 
 	default:
 		sendMessage(chatID, "Невідома команда. Використовуйте /help для отримання списку команд.")
@@ -167,7 +167,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 	}
 
 	// Always answer the callback to remove "loading..." state in the client
-        bot.Request(tgbotapi.NewCallback(query.ID, ""))
+	bot.Request(tgbotapi.NewCallback(query.ID, ""))
 }
 
 // handleOzhyvlyty extracted from original "msg.Text == оживити" logic
