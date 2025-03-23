@@ -285,7 +285,6 @@ func broadcastMessage(text string) {
 // Returns a help message for /help
 func getHelpMessage() string {
 	return "Доступні команди:\n" +
-		"/start - Привітання і вивід допомоги\n" +
 		"/help - Вивід цього списку команд\n" +
 		"/ozhyvyty - Запускає скрипт для оживлення сервера\n"
 }
@@ -293,7 +292,6 @@ func getHelpMessage() string {
 // Sends inline buttons with all commands
 func sendCommandButtons(chatID int64) {
 	buttons := []tgbotapi.InlineKeyboardButton{
-		tgbotapi.NewInlineKeyboardButtonData("/start", "/start"),
 		tgbotapi.NewInlineKeyboardButtonData("/help", "/help"),
 		tgbotapi.NewInlineKeyboardButtonData("/оживити", "/ozhyvyty"),
 	}
