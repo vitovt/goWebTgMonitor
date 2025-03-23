@@ -157,6 +157,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 		sendCommandButtons(chatID)
 	case "/ozhyvyty":
 		if privilegedUsersSublist[userID] {
+			sendMessage(chatID, "Намагаюсь оживити сервер, зачекайте хвилинку ...")
 			handleOzhyvlyty(chatID)
 		} else {
 			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
