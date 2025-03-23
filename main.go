@@ -136,6 +136,13 @@ func handleCommand(msg *tgbotapi.Message) {
 
 	case "mysecretid":
 		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d", chatID))
+	case "status":
+		if privilegedUsersSublist[userID] {
+			sendMessage(chatID, "Перевіряю статус, зачекайте хвилинку ...")
+			handleStatus(chatID)
+		} else {
+			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
+		}
 
 	default:
 		sendMessage(chatID, "Невідома команда. Використовуйте /help для отримання списку команд.")
@@ -161,6 +168,13 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 		if privilegedUsersSublist[userID] {
 			sendMessage(chatID, "Намагаюсь оживити сервер, зачекайте хвилинку ...")
 			handleOzhyvlyty(chatID)
+		} else {
+			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
+		}
+	case "/status":
+		if privilegedUsersSublist[userID] {
+			sendMessage(chatID, "Перевіряю статус, зачекайте хвилинку ...")
+			handleStatus(chatID)
 		} else {
 			sendMessage(chatID, "У вас немає дозволу виконувати цю команду.")
 		}
@@ -196,6 +210,10 @@ func handleOzhyvlyty(chatID int64) {
 		// If not OK, continue normal cycle (do nothing special here)
 		sendMessage(chatID, "Сервіс все ще недоступний, продовжую перевірку.")
 	}
+}
+
+func handleStatus(chatID int64) {
+	sendMessage(chatID, "Статус сервера: все в порядку!")
 }
 
 // checkAndNotify checks the service and sends notifications if it is down
@@ -286,7 +304,8 @@ func broadcastMessage(text string) {
 func getHelpMessage() string {
 	return "Доступні команди:\n" +
 		"/help - Вивід цього списку команд\n" +
-		"/ozhyvyty - Запускає скрипт для оживлення сервера\n"
+		"/ozhyvyty - Запускає скрипт для оживлення сервера\n" +
+		"/status - Статус сервера\n"
 }
 
 // Sends inline buttons with all commands
@@ -294,6 +313,7 @@ func sendCommandButtons(chatID int64) {
 	buttons := []tgbotapi.InlineKeyboardButton{
 		tgbotapi.NewInlineKeyboardButtonData("/help", "/help"),
 		tgbotapi.NewInlineKeyboardButtonData("/оживити", "/ozhyvyty"),
+		tgbotapi.NewInlineKeyboardButtonData("/status", "/status"),
 	}
 
 	// Arrange buttons in a row (single row with 3 buttons)
