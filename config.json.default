@@ -7,6 +7,7 @@
   "secondCheckDelaySeconds": 30,
   "scriptWaitTimeSeconds": 40,
   "requestTimeoutSeconds": 30,
+  "statusPath": "/root/status_script.sh",
   "scriptPath": "/root/main_script.sh"
 }
 

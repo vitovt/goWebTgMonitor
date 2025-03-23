@@ -25,6 +25,7 @@ type Config struct {
 	ScriptWaitTimeSeconds   int     `json:"scriptWaitTimeSeconds"`
 	RequestTimeoutSeconds   int     `json:"requestTimeoutSeconds"`
 	ScriptPath              string  `json:"scriptPath"`
+	StatusPath              string  `json:"statusPath"`
 }
 
 var (
@@ -213,7 +214,21 @@ func handleOzhyvlyty(chatID int64) {
 }
 
 func handleStatus(chatID int64) {
-	sendMessage(chatID, "Статус сервера: все в порядку!")
+	message := fmt.Sprintf("Перевірка URL сайту:\n%s\n", config.CheckURL)
+	ok := checkService()
+	if !ok {
+		message += "ERROR: НЕДОСТУПНО!\n"
+	} else {
+		message += "OK: Доступно!\n"
+	}
+	cmd := exec.Command("/bin/bash", config.StatusPath)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		message += fmt.Sprintf("Status error:", err)
+	} else {
+		message += string(output)
+	}
+	sendMessage(chatID, message)
 }
 
 // checkAndNotify checks the service and sends notifications if it is down
