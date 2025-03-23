@@ -115,6 +115,7 @@ func handleCommand(msg *tgbotapi.Message) {
 	case "start":
 		// Greeting + show help
 		sendMessage(chatID, "Привіт! Я твій бот для управління сервером.\n\n"+getHelpMessage())
+		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d", chatID))
 		// Send inline buttons
 		sendCommandButtons(chatID)
 
@@ -151,6 +152,7 @@ func handleCallbackQuery(query *tgbotapi.CallbackQuery) {
 	switch data {
 	case "/start":
 		sendMessage(chatID, "Привіт! Я твій бот для управління сервером.\n\n"+getHelpMessage())
+		sendMessage(chatID, fmt.Sprintf("Ваш секретний ID:\n\n%d", chatID))
 		sendCommandButtons(chatID)
 	case "/help":
 		sendMessage(chatID, getHelpMessage())
