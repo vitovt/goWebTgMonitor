@@ -17,7 +17,7 @@ This is a Go Telegram bot designed to monitor the availability of an HTTPS servi
 - Access to the machine on which the script should be executed.
 - (Optional) `sudo` privileges set up, if you need to run the script as root while the bot runs as a non-root user.
 
-## Installation
+## Compilation
 
 1. **Compile the bot**
    ```bash
@@ -47,9 +47,30 @@ or just download binary from release page if it is compatible with your GLIBC.
 
 3. **Run the Bot**  
    ```bash
-   ./bin/goWebTgMonitor-1.0.1_linux_amd64
+   ./bin/goWebTgMonitor-1.1.0_linux_amd64
    ```
    The bot starts polling for updates, and you can control it via Telegram.
+
+## Installation
+Install as a systemd service in any modern linux distributive
+
+```sh
+./install_systemd.sh
+```
+
+### Autorun
+
+```sh
+#sudo systemctl enable tgbot.service
+#sudo systemctl start tgbot.service
+systemctl status tgbot.service
+```
+
+### Viewing logs
+
+```sh
+#journalctl -u tgbot.service -f
+```
 
 ## Usage
 1. **Start the Bot**  

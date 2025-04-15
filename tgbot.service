@@ -1,0 +1,14 @@
+[Unit]
+Description=goWebTgMonitor Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tgbot
+ExecStart=/opt/tgbot/goWebTgMonitor
+Restart=on-failure
+#EnvironmentFile=/opt/tgbot/.env
+
+[Install]
+WantedBy=multi-user.target
+
