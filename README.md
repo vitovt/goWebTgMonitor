@@ -61,15 +61,15 @@ Install as a systemd service in any modern linux distributive
 ### Autorun
 
 ```sh
-#sudo systemctl enable tgbot.service
-#sudo systemctl start tgbot.service
+sudo systemctl enable tgbot.service
+sudo systemctl start tgbot.service
 systemctl status tgbot.service
 ```
 
 ### Viewing logs
 
 ```sh
-#journalctl -u tgbot.service -f
+journalctl -u tgbot.service -f
 ```
 
 ## Usage
